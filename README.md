@@ -13,5 +13,6 @@
 - ⚙️ [SQLMap Tamper Guide](./SQLMap-Master-Guide.md)
 
 ---
+---
 ### ⚠️ Disclaimer
-Unauthorized use is illegal. Educational and Authorized use only.
+Unauthorized access to computer systems is illegal. These payloads are provided for educational purposes, authorized penetration testing, and Bug Bounty research only. CyberTrace Labs is not responsible for any misuse of this information.
